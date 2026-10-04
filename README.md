@@ -31,6 +31,7 @@ ingestion/
   ingest_hr.py        Builds the HR Chroma collection from PDFs
   pdf_loader.py       PDF loading helper
 test/
+  test_stream.py       Manual streaming endpoint smoke test
   test_hr_retrieval.py Manual retrieval smoke test
 ```
 
@@ -96,6 +97,8 @@ http://127.0.0.1:8000/docs
 
 ## API Endpoints
 
+All HR chat endpoints use `session_id` as the LangGraph `thread_id`. Reuse the same `session_id` to continue a conversation and retrieve its message history later.
+
 Health/root endpoint:
 
 ```http
@@ -115,6 +118,8 @@ Response:
 ```http
 POST /api/v1/chat/hr
 ```
+
+Returns the complete chatbot answer after the graph finishes running.
 
 Request body:
 
@@ -140,6 +145,8 @@ Response body:
 POST /api/v1/chat/hr/stream
 ```
 
+Streams chatbot output token-by-token while the graph is running. Use the same request body as the normal chat endpoint.
+
 Request body:
 
 ```json
@@ -154,6 +161,11 @@ The response uses `application/x-ndjson` and streams newline-delimited events:
 ```json
 {"type":"token","content":"Employees"}
 ```
+
+Each non-empty line is a JSON object with:
+
+- `type`: `token`, `done`, or `error`
+- `content`: token text or error details
 
 The stream ends with:
 
@@ -172,6 +184,8 @@ If an error occurs, the stream returns:
 ```http
 GET /api/v1/chat/hr/history/{session_id}
 ```
+
+Returns messages stored for a previous chat session. The `session_id` must match the value sent to `/api/v1/chat/hr` or `/api/v1/chat/hr/stream`.
 
 Example:
 
@@ -205,9 +219,19 @@ To verify that HR retrieval is working:
 .\.venv\Scripts\python.exe test\test_hr_retrieval.py
 ```
 
+## Manual Streaming Test
+
+Start the API, then run:
+
+```powershell
+.\.venv\Scripts\python.exe test\test_stream.py
+```
+
+The script posts to `/api/v1/chat/hr/stream` with `session_id` set to `stream-demo-001` and prints each streamed JSON event.
+
 ## Notes
 
 - Chroma data is stored locally in `chromaDB`.
 - LangGraph conversation checkpoints are stored in `chatbot_memory.db`.
-- The enabled route is currently only the HR chatbot: `/api/v1/chat/hr`.
+- The enabled chatbot routes are under `/api/v1/chat/hr`.
 - Ecommerce and support datasets exist under `data/`, but their routers are commented out.
