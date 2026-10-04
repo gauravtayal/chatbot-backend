@@ -10,7 +10,7 @@ FastAPI backend for an AI chatbot platform. The current implementation exposes a
 - Retrieves relevant HR policy context for each user question
 - Uses a LangGraph workflow to rewrite, retrieve, and answer questions
 - Persists chat memory with a SQLite LangGraph checkpointer
-- Serves the chatbot through a FastAPI endpoint
+- Serves normal, streaming, and history endpoints through FastAPI
 
 The ecommerce and support chatbot routes are scaffolded but not enabled yet.
 
@@ -58,11 +58,13 @@ Install dependencies:
 uv sync
 ```
 
-Create a `.env` file if needed. The app currently supports:
+Create a `.env` file if needed. The settings module defines:
 
 ```env
 CHROMA_PATH=./chromaDB
 ```
+
+The current HR vector store persists to `./chromaDB`.
 
 ## Ingest HR Documents
 
@@ -92,7 +94,23 @@ Interactive docs:
 http://127.0.0.1:8000/docs
 ```
 
-## HR Chat Endpoint
+## API Endpoints
+
+Health/root endpoint:
+
+```http
+GET /
+```
+
+Response:
+
+```json
+{
+  "message": "Welcome to the AI chatbot API!"
+}
+```
+
+### HR Chat
 
 ```http
 POST /api/v1/chat/hr
@@ -113,6 +131,69 @@ Response body:
 {
   "answer": "Answer generated from the HR knowledge base.",
   "session_id": "user-123"
+}
+```
+
+### HR Streaming Chat
+
+```http
+POST /api/v1/chat/hr/stream
+```
+
+Request body:
+
+```json
+{
+  "message": "What is the maternity leave policy?",
+  "session_id": "user-123"
+}
+```
+
+The response uses `application/x-ndjson` and streams newline-delimited events:
+
+```json
+{"type":"token","content":"Employees"}
+```
+
+The stream ends with:
+
+```json
+{"type":"done","content":""}
+```
+
+If an error occurs, the stream returns:
+
+```json
+{"type":"error","content":"Error message"}
+```
+
+### HR Chat History
+
+```http
+GET /api/v1/chat/hr/history/{session_id}
+```
+
+Example:
+
+```http
+GET /api/v1/chat/hr/history/user-123
+```
+
+Response body:
+
+```json
+{
+  "session_id": "user-123",
+  "messages": [
+    {
+      "role": "human",
+      "content": "What is the maternity leave policy?"
+    },
+    {
+      "role": "ai",
+      "content": "Answer generated from the HR knowledge base."
+    }
+  ]
 }
 ```
 
