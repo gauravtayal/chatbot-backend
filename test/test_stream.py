@@ -5,7 +5,7 @@ url = "http://127.0.0.1:8000/api/v1/chat/hr/stream"
 
 payload = {
     "message": "What is the maternity leave policy?",
-    "session_id": "stream-demo-001"
+    "session_id": "shalu-001"
 }
 
 
